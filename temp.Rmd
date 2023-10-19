@@ -1,0 +1,20 @@
+---
+title: "testmarkdown"
+author: "Collin Richter"
+date: "10/19/2023"
+output: html_document
+---
+
+# Lab 1
+whatever whatever
+
+
+*italic*
+
+**bold**
+
+`library(ggplot)`
+
+```{r}
+2+2
+```
