@@ -6,18 +6,18 @@ output: html_document
 ---
 
 
-```{r}
+```{r setup, warning=FALSE}
 library(ggplot2)
 library(sf)
 library(tidyverse)
 library(stringr)
 ```
 
-1. I will begin this assignment by using the using the Open Spaces and Mountain Parks of Boulder, Colorado Dataset. [here](https://drive.google.com/drive/folders/1YuX5oWjKS6vZx4zNyPwBKuiw9EJYNX5L?usp=sharing).
+### 1. I will begin this assignment by using the using the Open Spaces and Mountain Parks of Boulder, Colorado Dataset. [here](https://drive.google.com/drive/folders/1YuX5oWjKS6vZx4zNyPwBKuiw9EJYNX5L?usp=sharing).
 
-```{r}
+```{r warning=FALSE}
 boulder <- st_read("BoulderSocialMedia.shp")
-boulder
+
 ```
 This Here are the details of data: 
 
@@ -40,9 +40,9 @@ boulder = st_transform(boulder, 26753)
 
 
 
-I am examining the correlation of the distance between social media locations and water to examine if people like to take pictures near water. This may indicate how picturesque the bodies of water are in the boulder area, which could lead to further examination of the health of the wetlands and water bodies and help determine where to allocate funds for potential restoration or beautification projects. Let's look at the distance between all points and the bodies of water.
+### I am examining the correlation of the distance between social media locations and water to examine if people like to take pictures near water. This may indicate how picturesque the bodies of water are in the boulder area, which could lead to further examination of the health of the wetlands and water bodies and help determine where to allocate funds for potential restoration or beautification projects. Let's look at the distance between all points and the bodies of water.
 
-```{r}
+```{r warning=FALSE}
 boulder = st_transform(boulder, 26753) 
 
 ggplot() +
@@ -51,8 +51,9 @@ ggplot() +
     theme_bw()
 ```
 
-Now, lets look at distance of points for each post on social media (Flickr and Pano) to water bodies
-```{r}
+### Now, lets look at distance of points for each post on social media (Flickr and Pano) to water bodies
+```{r warning=FALSE}
+library(ggspatial)
 boulder$DB<-as.factor(boulder$DB)
 boulder2<-boulder[boulder$DB != "OSMP_lands", drop = FALSE]
   
@@ -61,17 +62,23 @@ ggplot() +
     fill = NA, alpha = .2) + scale_colour_gradientn(colours = terrain.colors(10)) +labs(
     x = "Longitude",
     y = "Latitude"
-  ) 
-    theme_bw()
+  ) + theme_bw()+  ggspatial::annotation_north_arrow(
+    location = "tr", which_north = "true",
+    pad_x = unit(0.4, "in"), pad_y = unit(0.4, "in"),
+    style = ggspatial::north_arrow_nautical(
+      fill = c("grey40", "white"),
+      line_col = "grey20",
+      text_family = "ArcherPro Book"
+    ))
 
 ```
 
 
 
 
-Now we are going to examine the distance to water bodies between social media locations and nonsocial media locations (Flickr and Pano vs. OSMP_lands). We use a box plot to compare mean distance of these photographs on social media and non-photograph locations from the nearest body of water   
+### Now we are going to examine the distance to water bodies between social media locations and nonsocial media locations (Flickr and Pano vs. OSMP_lands). We use a box plot to compare mean distance of these photographs on social media and non-photograph locations from the nearest body of water   
 
-```{r}
+```{r warning=FALSE}
 boulderx<-subset(boulder, DB == "Flickr")
 boulderx$loc_type<-"social"
 bouldery<-subset(boulder, DB == "Pano")
@@ -90,7 +97,8 @@ boulder %>%
   ) + theme( panel.background = element_rect(fill = "white", color = 'black', size = 1.6, linetype = 'solid'),  text = element_text(size = 20),axis.text = element_text(colour = "black", size = 20))
   
 ```
-As you can see there is no significant relationship (https://blog.bioturing.com/2018/05/22/how-to-compare-box-plots/). The mean values and standard deviation is highly similar.  
+
+### As you can see there is no significant relationship (https://blog.bioturing.com/2018/05/22/how-to-compare-box-plots/). The mean values and standard deviation is highly similar.  
 
 
 
