@@ -10,9 +10,10 @@ output: html_document
 library(ggplot2)
 library(sf)
 library(tidyverse)
+library(stringr)
 ```
 
-1. Let's also grab some data [here](https://drive.google.com/drive/folders/1YuX5oWjKS6vZx4zNyPwBKuiw9EJYNX5L?usp=sharing). This is spatial point dataset that I have collected as part of a project in the Open Spaces and Moutain Parks of Boulder Colorado. It consist of the points where people have taken pictures using Flickr and Panramio. We have also collected several spatial varibles that might explain why individuals might be taking photographs at these points and all other points in park. We will import the data as a sf spatial dataset.
+1. I will begin this assignment by using the using the Open Spaces and Mountain Parks of Boulder, Colorado Dataset. [here](https://drive.google.com/drive/folders/1YuX5oWjKS6vZx4zNyPwBKuiw9EJYNX5L?usp=sharing).
 
 ```{r}
 boulder <- st_read("BoulderSocialMedia.shp")
@@ -34,164 +35,68 @@ This Here are the details of data:
 | Hydro_dis |  distance to lakes, rivers and   creeks |
 | Street_dis |  distance to streets and parking   lots |
 
+boulder = st_transform(boulder, 26753) 
 
 
-2. We can plot these variables using [ggplot2](https://ggplot2.tidyverse.org/reference/ggsf.html). We define the sf data using the ```geom_sf``` function. The different arguments control the object attributes(this can be points, lines or polygons). For example, ```fill=``` control the color of object outline. ```alpha =``` controls the opacity of the object. The final argument is a complete theme, which controls the non-data display(e.g. neatlines, gradicule title). More details can be found regarding these [themes] here(https://ggplot2.tidyverse.org/reference/ggtheme.html). Here we use ```theme_bw```, which is the black and white theme. You can try other themes to explore the different options.
-
-```{r}
-ggplot() +
-    geom_sf(data =boulder,
-    fill = NA, alpha = .2) +
-    theme_bw()
-```  
 
 
-3. At the moment, the projection is a bit weird. Let's project the data using an appropriate projection for Colorado. Use the [epsg.io](https://epsg.io/) website for choosing the an appropriate projection
+I am examining the correlation of the distance between social media locations and water to examine if people like to take pictures near water. This may indicate how picturesque the bodies of water are in the boulder area, which could lead to further examination of the health of the wetlands and water bodies and help determine where to allocate funds for potential restoration or beautification projects. Let's look at the distance between all points and the bodies of water.
 
 ```{r}
 boulder = st_transform(boulder, 26753) 
+
 ggplot() +
-    geom_sf(data =boulder,
-    fill = NA, alpha = .2) +
+    geom_sf(data =boulder, aes(color= Hydro_dis),
+    fill = NA, alpha = .2) + scale_colour_gradientn(colours = terrain.colors(10)) +
     theme_bw()
 ```
 
-
-### Commit and push the changes to GitHub
-Now that you have created the R Markdown document, you might want to start committing these changes.
-
-+ In RStudio click the Git tab in the upper right pane.
-+ ick Commit.
-+ In the Review changes view, check the staged box for all files.
-+ Add a commit message, for example Add initial code.
-+ Click Commit.
-+ Click the Pull button to fetch any remote changes(perhaps others working on the code).
-+ Click the Push button to push your changes to the remote repository.
-+ On GitHub, navigate to the Code tab of the repository to see the changes.
-
-As you progress with your project, you can commit your changes periodically to maintain a clear version history. This practice ensures that you can easily track and revert to previous states of your project if needed. Additionally, for added convenience, you can clone your project's code onto other machines. This allows you to seamlessly continue your coding work across different environments, such as your UMICH workstation and personal machines, without any disruptions or discrepancies.
-
-4. Now we will explore different methods for visualizing this data. We will add 'Gradient colour scales' in ggplot2. Here is the documentation of these options https://ggplot2.tidyverse.org/reference/scale_gradient.html.   
-
+Now, lets look at distance of points for each post on social media (Flickr and Pano) to water bodies
 ```{r}
+boulder$DB<-as.factor(boulder$DB)
+boulder2<-boulder[boulder$DB != "OSMP_lands", drop = FALSE]
+  
 ggplot() +
-    geom_sf(data =boulder, aes(color=PT_Elev),
-    fill = NA, alpha = .2) +
+    geom_sf(data =boulder2, aes(color= Hydro_dis),
+    fill = NA, alpha = .2) + scale_colour_gradientn(colours = terrain.colors(10)) +labs(
+    x = "Longitude",
+    y = "Latitude"
+  ) 
     theme_bw()
+
 ```
 
 
-5. ```ggplot2``` has several gradient colour scale options. The details can be found [here](https://ggplot2.tidyverse.org/reference/scale_gradient.html).  
+
+
+Now we are going to examine the distance to water bodies between social media locations and nonsocial media locations (Flickr and Pano vs. OSMP_lands). We use a box plot to compare mean distance of these photographs on social media and non-photograph locations from the nearest body of water   
 
 ```{r}
-ggplot() +
-    geom_sf(data =boulder, aes(color=PT_Elev),
-    fill = NA, alpha = .2) +
-  scale_colour_gradientn(colours = terrain.colors(10)) +  
-  theme_bw()
-```
+boulderx<-subset(boulder, DB == "Flickr")
+boulderx$loc_type<-"social"
+bouldery<-subset(boulder, DB == "Pano")
+bouldery$loc_type<-"social"
+boulderz<-subset(boulder, DB == "OSMP_lands")
+boulderz$loc_type<-"nonsocial"
+boulder<-rbind(boulderx, bouldery, boulderz)
 
 
-6. Let's look at the locations above 2200 meters. For this we will need to use the ```ifelse()``` function. The function basically means if the first argument is true (PT_Elev >= 2200), the elevation is greater than 2200 meter, then print the first varible: TRUE; if not true, print the second varible: FALSE. We use the mutate fucntion to make a new variable in our boulder dataframe. We then use ggplot to plot these locations.    
-
-```{r}
-#library(dplyer)
 boulder %>%
-    mutate(high_elev = ifelse(PT_Elev >= 2200, TRUE, FALSE))%>% 
-ggplot() +
-  geom_sf(aes(color=high_elev),
-    fill = NA, alpha = .2)  +  
-  theme_bw()
+  filter(loc_type ==  'social' | loc_type == 'nonsocial') %>%
+  ggplot(aes(x=loc_type, y=Hydro_dis)) + 
+  geom_boxplot()+labs(
+    x = "Location",
+    y = "Distance to Water"
+  ) + theme( panel.background = element_rect(fill = "white", color = 'black', size = 1.6, linetype = 'solid'),  text = element_text(size = 20),axis.text = element_text(colour = "black", size = 20))
+  
 ```
+As you can see there is no significant relationship (https://blog.bioturing.com/2018/05/22/how-to-compare-box-plots/). The mean values and standard deviation is highly similar.  
 
 
-7. We can also plot different charts using ggplot. Let's compare the distance from roads and social media photographs. Here we ```filter()``` to analyze social media only. We use a box plot to compare mean distance of these photographs from the nearest road. What does this test?  
-
-```{r}
-boulder %>%
-  filter(DB ==  'Pano' | DB == 'Flickr') %>%
-  ggplot(aes(x=DB, y=Street_dis)) + 
-  geom_boxplot()
-```
-As you can see there is no [significant relationship](https://blog.bioturing.com/2018/05/22/how-to-compare-box-plots/). The mean values and standard deviation is highly similar. There are numerous other tests and charts that you can use to investigate the relationship between locations of soical media photographs and other locations in the park. 
 
 
-## Additional Geovis tools
-We are also going to learn about two new packages that might be helpful for your data science approach. We will learn about the ```library(viridis)```, which provides color palettes that are interpretable for visually impaired.  
 
 
-### The color scale 
-The package viridis contains four color scales: “Viridis”, the primary choice, and three alternatives with similar properties, “magma”, “plasma”, and “inferno”. 
-
-![](C:\Users\dbvanber\Dropbox (University of Michigan)\Geovis\Labs\Adv_Week_1\Adv_LabLecture1\Viridis.png)
-
-```{r}
-library(sf)
-library(ggspatial)
-library(viridis)
-## the function gives the hexadecimal colors 
-## the interger give the numbers of colors
-magma(10)
-```
-
-
-```{r}
-boulder <- st_read("C:/Users/dbvanber/Dropbox (University of Michigan)/Geovis/Labs/Adv_Week_1/BoulderSocialMedia.shp")
-ggplot() +
-    geom_sf(data = boulder, aes(color=PT_Elev),
-    fill = NA, alpha = .2) + 
-    scale_colour_gradientn(colours = magma(10))
-```
-
-We can also plot discrete values.  
-```{r}
-summary(boulder$DB)
-```
-
-```{r}
-p <- ggplot() +
-  annotation_spatial(boulder) +
-  layer_spatial(boulder, aes(col = DB))
-p + scale_color_brewer(palette = "Dark2")
-```
-
-
-### tmaps
-Alternatively, we can use tmap a way to create maps using R
-
-```{r}
-library(tmap)
-## Add the data - these are specific to the vector or raster
-tm_shape(boulder) + 
-  ## which variable, is there a class interval, palette, and other options
-  tm_symbols(col='PT_Elev', 
-             style='quantile', 
-             palette = 'YlOrRd',
-             border.lwd = NA,
-             size = 0.1)
-
-```
-
-It is really easy to add cartographic elements in tmap
-
-```{r}
-## here we are using a simple dataset of the world 
-# tmap_mode("plot")
-data("World")
-tm_shape(World) +
-    tm_polygons("gdp_cap_est", style='quantile', legend.title = "GDP Per Capita Estimate")
-```
-
-
-It is really easy to make an interactive map in tmap as well 
-```{r}
-## the view mode creates an interactive map
-tmap_mode("view")
-
-tm_shape(World) +
-    tm_polygons("gdp_cap_est", style='quantile', legend.title = "GDP Per Capita Estimate")
-
-```
 
 
 
